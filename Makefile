@@ -10,7 +10,7 @@ test:
 	poetry run pytest tests/ -v
 
 run:
-	poetry run python -m risk_runner.runner
+	poetry run python main.py
 
 clean:
 	rm -f risk_local.db
