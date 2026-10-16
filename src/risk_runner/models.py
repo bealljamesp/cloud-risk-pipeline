@@ -3,6 +3,8 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
+from risk_runner.garch import compute_gjr_garch_volatility
+
 
 @dataclass(slots=True, frozen=True)
 class SimulationConfig:
@@ -17,24 +19,35 @@ def simulate_portfolio_paths(
     weights: npt.NDArray[np.float64],
     config: SimulationConfig,
 ) -> npt.NDArray[np.float64]:
-    """Generates multi-period correlated asset paths via Cholesky decomposition.
-
-    Adheres strictly to vectorized NumPy operations without explicit loops.
-    """
+    """Generates multi-period correlated asset paths via Cholesky decomposition."""
     num_assets = weights.size
     cholesky_factor = np.linalg.cholesky(covariance_matrix)
 
-    # Standard normal shocks: shape (num_paths, horizon_days, num_assets)
     random_shocks = np.random.standard_normal(
         size=(config.num_paths, config.horizon_days, num_assets)
     )
-
-    # Correlated asset returns across paths and time steps
     correlated_shocks = random_shocks @ cholesky_factor.T
     path_returns = mean_returns + correlated_shocks
-
-    # Aggregate to portfolio level over the horizon: shape (num_paths, horizon_days)
     portfolio_path_values = path_returns @ weights
     cumulative_path_returns = np.sum(portfolio_path_values, axis=1)
+
+    return cumulative_path_returns
+
+
+def simulate_portfolio_paths_with_garch(
+    historical_returns: npt.NDArray[np.float64],
+    weights: npt.NDArray[np.float64],
+    config: SimulationConfig,
+) -> npt.NDArray[np.float64]:
+    """Generates portfolio path returns scaled by GJR-GARCH conditional volatility."""
+    portfolio_historical_returns = historical_returns @ weights
+    conditional_vol = compute_gjr_garch_volatility(portfolio_historical_returns)
+    latest_vol = conditional_vol[-1]
+
+    random_shocks = np.random.standard_normal(
+        size=(config.num_paths, config.horizon_days)
+    )
+    scaled_paths = random_shocks * latest_vol
+    cumulative_path_returns = np.sum(scaled_paths, axis=1)
 
     return cumulative_path_returns
