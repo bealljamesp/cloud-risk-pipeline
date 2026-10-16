@@ -11,9 +11,15 @@ def test_compute_portfolio_risk_shapes_and_bounds() -> None:
         [0.2, 0.2, 0.2, 0.2, 0.2], dtype=np.float64
     )
 
-    var, es = compute_portfolio_risk(returns, weights, confidence=0.99)
+    var, es, kupiec_p, christoffersen_p = compute_portfolio_risk(
+        returns, weights, confidence=0.99
+    )
 
     assert isinstance(var, float)
     assert isinstance(es, float)
-    assert var >= 0.0
-    assert es >= var
+    assert isinstance(kupiec_p, float)
+    assert isinstance(christoffersen_p, float)
+    assert var > 0.0
+    assert es > var
+    assert 0.0 <= kupiec_p <= 1.0
+    assert 0.0 <= christoffersen_p <= 1.0
