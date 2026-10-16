@@ -1,0 +1,35 @@
+terraform {
+  required_version = ">= 1.7.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+module "networking" {
+  source      = "./modules/networking"
+  environment = var.environment
+}
+
+module "storage" {
+  source             = "./modules/storage"
+  environment        = var.environment
+  vpc_id             = module.networking.vpc_id
+  private_subnet_ids = module.networking.private_subnet_ids
+  db_password        = var.db_password
+}
+
+module "compute" {
+  source             = "./modules/compute"
+  environment        = var.environment
+  vpc_id             = module.networking.vpc_id
+  private_subnet_ids = module.networking.private_subnet_ids
+  s3_bucket_arn      = module.storage.s3_bucket_arn
+  database_url       = module.storage.database_url
+}
