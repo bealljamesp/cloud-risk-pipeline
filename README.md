@@ -52,8 +52,6 @@ make run
 ## Sample Execution Output
 
 ```
-(cloud-risk) beall@JamesBSurface8:~/projects/cloud-risk-pipeline$ make run
-poetry run python main.py
 2026-10-16 14:57:13,562 [INFO] __main__: Starting local quantitative risk pipeline execution.
 2026-10-16 14:57:13,563 [INFO] risk_runner.runner: Initializing risk calculation runner.
 2026-10-16 14:57:13,563 [INFO] risk_runner.runner: Loading local portfolio weights from data/portfolio_weights.csv
