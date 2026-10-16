@@ -1,4 +1,5 @@
 import logging
+import os
 from io import StringIO
 
 import boto3
@@ -22,13 +23,8 @@ def compute_portfolio_risk(
 ) -> tuple[float, float]:
     """Computes Parametric VaR and Expected Shortfall using vectorized NumPy operations."""
     portfolio_returns: npt.NDArray[np.float64] = returns @ weights
-    mean_ret = np.mean(portfolio_returns)
-    std_ret = np.std(portfolio_returns, ddof=1)
 
-    # Parametric VaR using normal approximation (or historical quantile)
     var_val = float(np.percentile(portfolio_returns, (1.0 - confidence) * 100.0))
-
-    # Expected Shortfall (Conditional VaR)
     tail_losses = portfolio_returns[portfolio_returns <= var_val]
     es_val = float(np.mean(tail_losses)) if tail_losses.size > 0 else var_val
 
@@ -36,20 +32,23 @@ def compute_portfolio_risk(
 
 
 def main() -> None:
-    logger.info("Initializing serverless risk calculation runner.")
-    s3_client = boto3.client("s3", region_name=settings.aws_region)
+    logger.info("Initializing risk calculation runner.")
 
-    logger.info(
-        f"Fetching portfolio payload from s3://{settings.s3_bucket_name}/{settings.portfolio_file_key}"
-    )
-    obj = s3_client.get_object(
-        Bucket=settings.s3_bucket_name, Key=settings.portfolio_file_key
-    )
-    csv_data = obj["Body"].read().decode("utf-8")
+    local_path = "data/portfolio_weights.csv"
+    if os.path.exists(local_path):
+        logger.info(f"Loading local portfolio weights from {local_path}")
+        df = pd.read_csv(local_path)
+    else:
+        s3_client = boto3.client("s3", region_name=settings.aws_region)
+        logger.info(
+            f"Fetching portfolio payload from s3://{settings.s3_bucket_name}/{settings.portfolio_file_key}"
+        )
+        obj = s3_client.get_object(
+            Bucket=settings.s3_bucket_name, Key=settings.portfolio_file_key
+        )
+        csv_data = obj["Body"].read().decode("utf-8")
+        df = pd.read_csv(filepath_or_buffer=StringIO(csv_data))
 
-    df = pd.read_csv(filepath_or_buffer=StringIO(csv_data))
-
-    # Expecting columns: asset_id, weight, and historical return series
     weights: npt.NDArray[np.float64] = df["weight"].to_numpy(
         dtype=np.float64, copy=False
     )
@@ -75,9 +74,7 @@ def main() -> None:
         )
         session.add(run_record)
         session.commit()
-        logger.info(
-            "Successfully persisted risk metrics to PostgreSQL metadata ledger."
-        )
+        logger.info("Successfully persisted risk metrics to metadata ledger.")
     except Exception as exc:
         session.rollback()
         logger.error(f"Failed to commit risk metrics to database: {exc}")
