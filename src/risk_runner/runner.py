@@ -15,19 +15,19 @@ logger = logging.getLogger(__name__)
 
 
 def compute_portfolio_risk(
-    weights: npt.NDArray[np.float64],
     historical_returns: npt.NDArray[np.float64],
-    confidence_level: float = 0.99,
+    weights: npt.NDArray[np.float64],
+    confidence: float = 0.99,
     num_paths: int = 10000,
 ) -> tuple[float, float]:
     """Computes Value-at-Risk and Expected Shortfall using GJR-GARCH simulation paths."""
     config = SimulationConfig(
-        num_paths=num_paths, horizon_days=10, confidence_level=confidence_level
+        num_paths=num_paths, horizon_days=10, confidence_level=confidence
     )
     simulated_path_returns = simulate_portfolio_paths_with_garch(
         historical_returns, weights, config
     )
-    alpha = 1.0 - confidence_level
+    alpha = 1.0 - confidence
     var_threshold = np.percentile(simulated_path_returns, alpha * 100.0)
     var_99 = -var_threshold
     expected_shortfall_99 = -np.mean(
@@ -47,9 +47,9 @@ def run_risk_pipeline() -> None:
     historical_returns = np.random.normal(0.0001, 0.015, size=(252, weights.size))
 
     var_99, expected_shortfall_99 = compute_portfolio_risk(
-        weights=weights,
         historical_returns=historical_returns,
-        confidence_level=settings.confidence_level,
+        weights=weights,
+        confidence=settings.confidence_level,
         num_paths=settings.simulation_runs,
     )
 
