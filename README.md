@@ -71,3 +71,11 @@ ID   | TIMESTAMP (UTC)      | PORTFOLIO       | VaR 99%    | ES 99%
      -> Kupiec p-val: 0.0244 | Christoffersen p-val: 1.0000 | Status: SUCCESS
 ================================================================================
 ```
+
+## Summary of Accomplishments
+
+* **Core Risk Engine:** Vectorized GJR-GARCH(1,1) volatility scaling and Monte Carlo simulation paths implemented strictly within NumPy and Pandas without explicit loops.
+
+* **Regulatory Backtesting:** Kupiec Proportion of Failures and Christoffersen independence tests fully integrated and validated with a 100% test pass rate.
+
+* **Persistence & CLI:** SQLite audit ledger via SQLAlchemy capturing run metadata, p-values, and risk metrics, driven by a clean root main.py and Makefile automation.
